@@ -196,7 +196,7 @@ def extract_surrounding_window(
 
     if len(lines) <= max_total_lines or not target_lines:
         max_w = len(str(len(lines)))
-        return "\n".join(f"{str(idx).rjust(max_w)} | {l}" for idx, l in enumerate(lines, start=1))
+        return "\n".join(f"{str(idx).rjust(max_w)} | {line_text}" for idx, line_text in enumerate(lines, start=1))
 
     # Determine line ranges to include
     included_indices: Set[int] = set()

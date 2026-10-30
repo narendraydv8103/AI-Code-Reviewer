@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import logging
 import re
-from typing import Optional, Literal
+from typing import Literal, Optional
 
 import anthropic
 from anthropic import (
@@ -20,8 +20,8 @@ from app import config
 from reviewer.models import ReviewResult
 from reviewer.prompts import (
     SYSTEM_PROMPT,
-    build_review_prompt,
     build_retry_prompt,
+    build_review_prompt,
 )
 
 logger = logging.getLogger(__name__)

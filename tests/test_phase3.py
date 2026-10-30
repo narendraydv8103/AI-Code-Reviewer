@@ -1,5 +1,4 @@
 """Test suite for Phase 3: Smarter & Less Noisy Reviews."""
-import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -7,8 +6,7 @@ from unittest.mock import MagicMock, patch
 
 from analysis.models import StaticAnalysisFinding
 from analysis.runner import is_safe_relative_path, run_static_analysis
-from github_bot import config_loader, diff_utils, publisher, service
-from github_bot.config_loader import ReviewerConfig
+from github_bot import config_loader, publisher, service
 from reviewer.chunking import (
     deduplicate_issues,
     review_large_diff,

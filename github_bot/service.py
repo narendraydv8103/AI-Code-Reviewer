@@ -9,7 +9,6 @@ from analysis.runner import run_static_analysis
 from app import config, database
 from github_bot import auth, config_loader, diff_utils, publisher
 from github_bot.client import GitHubClient
-from github_bot.config_loader import ReviewerConfig
 from reviewer.chunking import review_large_diff
 from reviewer.engine import ReviewEngine
 from reviewer.models import ReviewIssue, ReviewResult

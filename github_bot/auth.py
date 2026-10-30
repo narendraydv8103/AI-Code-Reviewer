@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import logging
-import os
 import time
 from pathlib import Path
 from typing import Dict, Optional, Tuple

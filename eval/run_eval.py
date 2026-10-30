@@ -7,13 +7,12 @@ cases (offline with deterministic mock, or online with Anthropic Claude).
 from __future__ import annotations
 
 import argparse
-import glob
 import json
 import os
 import sys
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 # Ensure project root is on sys.path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -256,7 +255,6 @@ def match_issues(
         min_sev = expected.get("min_severity", "low").lower()
         min_rank = SEVERITY_RANKS.get(min_sev, 1)
 
-        matched = False
         for idx, ret in enumerate(returned_issues):
             if idx in matched_returned_indices:
                 continue
@@ -272,12 +270,10 @@ def match_issues(
             # Check line match
             if exp_line is not None:
                 if ret.line is not None and abs(ret.line - exp_line) <= line_tolerance:
-                    matched = True
                     matched_returned_indices.add(idx)
                     tp += 1
                     break
             else:
-                matched = True
                 matched_returned_indices.add(idx)
                 tp += 1
                 break

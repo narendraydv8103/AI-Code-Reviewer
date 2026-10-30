@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from typing import List, Literal, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import yaml
 from pydantic import BaseModel, Field, ValidationError

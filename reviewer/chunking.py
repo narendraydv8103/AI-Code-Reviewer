@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Any, List, Optional, Set, Tuple
+from typing import List, Optional, Tuple
 
 from reviewer.engine import ReviewEngine
 from reviewer.models import ReviewIssue, ReviewResult

@@ -5,7 +5,7 @@ import collections
 import logging
 import secrets
 import time
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials

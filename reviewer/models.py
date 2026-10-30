@@ -1,7 +1,8 @@
 """Core domain models for code review."""
 from __future__ import annotations
 
-from typing import Optional, List, Literal
+from typing import List, Literal, Optional
+
 from pydantic import BaseModel, Field
 
 Severity = Literal["low", "medium", "high"]

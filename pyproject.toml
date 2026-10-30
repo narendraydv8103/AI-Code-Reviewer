@@ -1,0 +1,14 @@
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+# Core lint rules: pycodestyle errors/warnings, Pyflakes, and isort
+select = ["E", "F", "W", "I"]
+ignore = [
+    "E501",  # Line length is advisory; prompts and sql statements exceed 100 chars
+]
+
+[tool.ruff.lint.per-file-ignores]
+# eval/run_eval.py modifies sys.path dynamically to support running as a standalone script
+"eval/run_eval.py" = ["E402"]

@@ -1,7 +1,6 @@
 """Prompts for LLM code review engine."""
 from __future__ import annotations
 
-import json
 from typing import List, Literal, Optional
 
 SYSTEM_PROMPT = """You are an expert Senior Staff Software Engineer and Security Auditor conducting an automated, rigorous code review.

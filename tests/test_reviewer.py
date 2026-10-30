@@ -3,27 +3,22 @@ import json
 import unittest
 from unittest.mock import MagicMock, patch
 
+from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
-from reviewer.models import ReviewIssue, ReviewResult
-from reviewer.prompts import (
-    SYSTEM_PROMPT,
-    add_line_numbers,
-    build_review_prompt,
-    build_retry_prompt,
-)
-from reviewer.engine import (
-    ReviewEngine,
-    ReviewEngineError,
-    ReviewAuthError,
-    ReviewTimeoutError,
-    ReviewTruncationError,
-    ReviewParsingError,
-    extract_json_str,
-)
 from app import config, database
 from app.main import app
-from fastapi.testclient import TestClient
+from reviewer.engine import (
+    ReviewAuthError,
+    ReviewEngine,
+    ReviewTruncationError,
+    extract_json_str,
+)
+from reviewer.models import ReviewIssue, ReviewResult
+from reviewer.prompts import (
+    add_line_numbers,
+    build_review_prompt,
+)
 from tests.base import BaseTestCase
 
 

@@ -9,8 +9,8 @@ from fastapi.testclient import TestClient
 
 from app import config
 from app.main import app
-from github_bot import auth, diff_utils, publisher, service
-from github_bot.client import GitHubClient, GitHubReviewCommentError
+from github_bot import diff_utils, publisher, service
+from github_bot.client import GitHubReviewCommentError
 from github_bot.webhook import verify_signature
 from reviewer.models import ReviewIssue, ReviewResult
 from tests.base import BaseTestCase
@@ -155,7 +155,7 @@ class TestPublisherAndFormatting(unittest.TestCase):
             {"path": "foo.py", "line": 42, "side": "RIGHT", "body": "Inline comment text"}
         ]
 
-        result = publisher.publish_pr_review(
+        _result = publisher.publish_pr_review(
             client=mock_client,
             owner="owner",
             repo="repo",

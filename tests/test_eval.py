@@ -1,5 +1,4 @@
 """Tests for Stage 3: Quality Evaluation Harness."""
-import tempfile
 import unittest
 from pathlib import Path
 
@@ -9,7 +8,7 @@ from eval.run_eval import (
     match_issues,
     run_evaluation,
 )
-from reviewer.models import ReviewIssue, ReviewResult
+from reviewer.models import ReviewIssue
 from tests.base import BaseTestCase
 
 

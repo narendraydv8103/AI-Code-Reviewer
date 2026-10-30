@@ -1,0 +1,16 @@
+.venv
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+__pycache__
+*.py[cod]
+data/*.db*
+*.pem
+eval_results
+Dockerfile*
+docker-compose*.yml
+.github
+tests
+eval

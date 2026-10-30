@@ -1,7 +1,6 @@
 """SQLite database layer for analytics, reviews history, and user feedback."""
 from __future__ import annotations
 
-import datetime
 import logging
 import sqlite3
 import uuid
