@@ -5,3 +5,4 @@
   "input": "from typing import Sequence\n\ndef calculate_median(values: Sequence[float]) -> float:\n    \"\"\"Calculates median of sorted float values safely.\"\"\"\n    if not values:\n        raise ValueError(\"Values list cannot be empty\")\n    sorted_vals = sorted(values)\n    n = len(sorted_vals)\n    mid = n // 2\n    if n % 2 == 1:\n        return float(sorted_vals[mid])\n    return (sorted_vals[mid - 1] + sorted_vals[mid]) / 2.0\n",
   "expected": []
 }
+

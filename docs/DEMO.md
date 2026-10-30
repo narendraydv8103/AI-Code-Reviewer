@@ -150,3 +150,4 @@ index a1b2c3d..e4f5g6h 100644
 
 **Presenter Says:**
 > *"That is AI Code Reviewer: zero friction for developers in the web UI, automated CI/CD guardrails via GitHub PR bot, and full observability for the team."*
+

@@ -5,3 +5,4 @@
   "input": "diff --git a/app/utils.py b/app/utils.py\n--- a/app/utils.py\n+++ b/app/utils.py\n@@ -10,3 +10,6 @@ def sanitize_slug(text: str) -> str:\n+    \"\"\"Converts raw text into a safe lowercase URL slug.\n+    \n+    Removes non-alphanumeric characters and replaces spaces with dashes.\n+    \"\"\"\n     return \"-\".join(text.lower().split())\n",
   "expected": []
 }
+

@@ -5,3 +5,4 @@
   "input": "from dataclasses import dataclass\nfrom typing import Optional\n\n@dataclass(frozen=True)\nclass ServiceConfig:\n    host: str\n    port: int\n    timeout: float = 30.0\n    api_prefix: str = \"/api/v1\"\n\n    def is_valid_port(self) -> bool:\n        return 1 <= self.port <= 65535\n",
   "expected": []
 }
+
