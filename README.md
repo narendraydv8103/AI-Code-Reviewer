@@ -1,162 +1,288 @@
 # AI Code Reviewer
 
-An automated code review system that reviews raw source code, unified `git diff`s, and **GitHub Pull Requests**, returning structured, actionable feedback (logic bugs, security vulnerabilities, performance bottlenecks, code style, and missing test coverage).
+**AI Code Reviewer** is an automated code review engine designed to act like a senior staff engineer on your team. It analyzes raw source code snippets, unified `git diff`s, and GitHub Pull Requests in real time, delivering structured, prioritized, and actionable feedback covering security vulnerabilities, logic bugs, performance traps, code style, and missing test coverage. Powered by **FastAPI**, **Anthropic Claude 3.5 Sonnet**, and safe local static analysis (**Bandit** and **Semgrep**), it combines high-precision LLM reasoning with strict automated guardrails.
 
-Powered by **FastAPI** and **Anthropic Claude**.
+---
+
+## Architecture Overview
+
+```mermaid
+flowchart TD
+    subgraph Clients["Clients & Ingestion"]
+        WebUI["Web Browser (Vanilla JS/CSS)"]
+        GitHub["GitHub (PR Webhooks)"]
+        CLI["review_pr CLI"]
+    end
+
+    subgraph Server["FastAPI Application"]
+        Router["FastAPI HTTP Router"]
+        Security["Security Layer\n- Sliding-window Rate Limiter\n- Daily Quota Counter\n- Access Token / HMAC SHA-256"]
+        Webhooks["GitHub Webhook Handler\n(BackgroundTasks Queue)"]
+    end
+
+    subgraph Engine["Review & Analysis Engine"]
+        StaticAnalysis["Static Analysis Runner\n(Bandit + Semgrep)\n*Sandboxed Tempdir*"]
+        Chunker["Diff Chunker &\nIssue Deduplicator"]
+        ReviewEngine["Review Engine\n- XML Prompt Delimiters\n- 1-Shot Self-Correction Retry"]
+        Claude["Anthropic Claude API\n(claude-sonnet-5-5)"]
+    end
+
+    subgraph Storage["Persistence & Telemetry"]
+        SQLite[("SQLite WAL Database\n(/app/data/reviews.db)\n- reviews\n- issues\n- github_comment_links")]
+        Dashboard["Telemetry Dashboard\n(/dashboard)"]
+    end
+
+    WebUI -->|POST /api/review\nPOST /api/feedback| Router
+    GitHub -->|POST /webhooks/github| Router
+    CLI --> ReviewEngine
+
+    Router --> Security
+    Security --> Webhooks
+    Security --> ReviewEngine
+
+    Webhooks --> StaticAnalysis
+    Webhooks --> Chunker
+    Chunker --> ReviewEngine
+    StaticAnalysis -.->|Hints on diff lines| ReviewEngine
+    ReviewEngine -->|Encrypted TLS API| Claude
+    Claude -->|Validated JSON Result| ReviewEngine
+
+    ReviewEngine --> SQLite
+    Router --> SQLite
+    SQLite --> Dashboard
+```
 
 ---
 
 ## Features
 
-### 🌐 Phase 1: Interactive Web App
-- **Multi-Mode Analysis**:
-  - **Full Code Mode**: Ingests code snippets and attributes findings to exact 1-based source line numbers.
+### 🌐 Phase 1: Interactive Web Application
+- **Multi-Mode Review**:
+  - **Full Code Mode**: Ingests complete source files and attributes findings to 1-based source line numbers.
   - **Git Diff Mode**: Parses unified diffs, tracking new-file line numbers from `@@ -a,b +c,d @@` hunk headers.
-- **Strict Structured Feedback**:
-  - Validated with Pydantic into issues with `severity` (`high`, `medium`, `low`), `category` (`bug`, `security`, `performance`, `style`, `tests`), `line`, `title`, `explanation`, `suggested_fix`, and `confidence`.
-  - Includes a concise overall summary of the review.
-- **Prompt Injection Defense**:
-  - Isolates user code and diffs in strict delimiters (`<user_code>` / `<user_diff>`).
-  - Instructs the model to treat all enclosed content strictly as passive data, never as commands or instructions.
-- **Resilient AI Engine**:
-  - Handles malformed LLM responses with an automated 1-shot self-correcting retry.
-  - Enforces API timeouts and returns friendly error messages for rate limits, token truncations, and connection issues.
-  - Returns HTTP 413 for inputs exceeding size limits (60,000 characters).
-- **Clean Single-Page UI**:
-  - Engineered with vanilla HTML5, CSS3, and JavaScript (zero build tools or npm dependencies needed).
-  - Dark editor panel (`#0B1220`) with dynamic line numbers, Tab-indentation support, and live character counter.
-  - Displays confidence score badges on cards when present (`95% confidence`).
-  - Filter issues by severity (`All`, `High`, `Medium`, `Low`).
-  - Color-coded severity chips with explicit text, category tags, line indicators, and 1-click "Copy fix" buttons.
-  - Responsive layout (stacks to a single column on mobile).
+- **Pydantic-Validated Structured Output**: Issues include `severity` (`high`, `medium`, `low`), `category` (`bug`, `security`, `performance`, `style`, `tests`), `line`, `title`, `explanation`, `suggested_fix`, and `confidence`.
+- **Prompt Injection Delimiters**: Isolates user code and diffs in XML boundary tags (`<user_code>` / `<user_diff>`), enforcing that model treats all input strictly as passive data.
+- **1-Shot Self-Correcting Retry**: Automatically retries malformed JSON responses with targeted corrective feedback.
+- **Modern Dark UI**: Engineered with zero frontend dependencies (no Webpack, npm, or build tools). Includes live line gutter, Tab indentation, character counter, severity chips, and 1-click "Copy fix" buttons.
 
-### 🤖 Phase 2: GitHub PR Review Bot
-- **Automated Pull Request Reviews**:
-  - GitHub App integration listening for `pull_request` webhooks (`opened`, `synchronize`, `reopened`).
-  - Immediate webhook response (`202 Accepted`) with asynchronous review execution via FastAPI background tasks.
-- **Webhook Security**:
-  - HMAC-SHA256 signature verification (`X-Hub-Signature-256`) using constant-time comparison. Rejects forged requests with `401 Unauthorized`.
-- **Smart Diff & Line Mapping**:
-  - Parses diff hunks to identify valid new-file lines (`+` and context).
-  - Emits GitHub inline comments strictly on diff lines, preventing GitHub's `422 Unprocessable Entity` rejection.
-  - File-level issues or comments on non-modified lines are placed into the PR review summary body.
-  - Automatic fallback: If GitHub rejects inline comments, the review falls back to posting the summary with all comments included in the markdown body.
-- **Safety & Noise Filtering**:
-  - Skips draft PRs and PRs authored by bots.
-  - Automatically ignores lockfiles (`package-lock.json`, `poetry.lock`, etc.), vendor directories, binary files, and deleted files.
-  - File count (`MAX_FILES`) and total diff character (`MAX_DIFF_CHARS`) caps.
-  - In-memory commit SHA lock prevents duplicate or concurrent reviews on the same commit.
-  - Suggested fixes use standard fenced code blocks rather than GitHub suggestion blocks to avoid accidental one-click breakage.
-- **Standalone CLI**:
-  - `python -m github_bot.review_pr <owner/repo> <pr_number> [--dry-run]` to test reviews locally without waiting for webhooks.
+### 🤖 Phase 2: GitHub Pull Request Review Bot
+- **Automated PR Reviews**: Listens for GitHub `pull_request` events (`opened`, `synchronize`, `reopened`) and dispatches reviews asynchronously.
+- **Cryptographic Webhook Verification**: Constant-time HMAC-SHA256 signature verification (`X-Hub-Signature-256`).
+- **Diff-Aware Inline Commenting**: Calculates commentable new-file lines (`+` additions and hunk context) to eliminate GitHub `422 Unprocessable Entity` errors.
+- **Resilient Fallback**: Automatically falls back to a Markdown summary review if inline comments are rejected.
+- **Noise & Safety Filters**: Skips draft PRs, bot-authored PRs, lockfiles (`package-lock.json`, `poetry.lock`), binary assets, and deleted files.
+- **Standalone CLI Runner**: Test reviews locally with `python -m github_bot.review_pr <owner/repo> <pr_number> [--dry-run]`.
 
-### 🧠 Phase 3: Smarter & Less Noisy Reviews
-- **Rich Repository Context**:
-  - Automatically incorporates PR title, description, base README excerpt, and surrounding code windows into the review prompt.
-  - Enclosed in strict XML delimiters (`<pr_metadata>`, `<readme_context>`, `<surrounding_code>`) with prompt injection defenses.
-- **Safe Static Analysis Hints (Bandit & Semgrep)**:
-  - Runs local static analysis tools in isolated temporary directories with strict timeouts.
-  - Semgrep runs with `--metrics=off` and built-in rulesets (`p/default`); if offline or rule downloads fail, it skips gracefully without blocking the review.
-  - Never executes code from the PR or loads repo-provided configuration files / plugins.
-  - Validates file paths to prevent directory traversal (`..` and absolute paths).
-  - Keeps **only** findings on modified lines and feeds them to Claude as unverified hints to check against the code.
-- **Large Diff Chunking & Deduplication**:
-  - Automatically splits diffs exceeding 12,000 characters along `@@` hunk boundaries while retaining diff headers.
-  - Reviews chunks separately and deduplicates overlapping findings (same file/line/category or near-identical titles), keeping the highest-ranked issue.
-  - Prioritizes security-sensitive files (auth, db, crypto, payment) under constrained `MAX_LLM_CALLS_PER_PR` budgets.
-- **Per-Repository Configuration (`.reviewer.yml`)**:
-  - Always loaded from the **target BASE branch** (e.g. `main`), preventing pull requests from tampering with review rules.
-  - Supports `min_severity`, `enabled_categories`, `ignore_path_globs`, `max_comments`, `min_confidence`, and `custom_guidelines`.
-  - Validated with Pydantic; falls back safely to defaults with a summary notice if the file is invalid.
-- **Noise Reduction & Confidence Thresholds**:
-  - Filters out trivial style nits unless the style category is explicitly requested.
-  - Drops issues below configurable `min_confidence` (default `0.5`).
-  - Caps inline comments per PR, prioritizing by severity and confidence.
-- **Fork PR Resilience**:
-  - If fetching full file contents from a fork fails, falls back gracefully to patch-only analysis.
+### 🧠 Phase 3: Smarter & Context-Aware Reviews
+- **Rich Repository Context**: Automatically includes PR title, description, base `README.md` excerpt, and surrounding file context windows inside secure XML blocks.
+- **Sandboxed Static Analysis**: Runs Bandit and Semgrep in temporary isolated directories with strict timeouts. Hints are only passed to the LLM if they fall on changed diff lines.
+- **Diff Chunking & Deduplication**: Splits large diffs (>12,000 characters) across hunk boundaries, reviews chunks, and deduplicates redundant findings.
+- **Per-Repository Configuration (`.reviewer.yml`)**: Loaded strictly from the target base branch (`main`), preventing PR authors from tampering with rules.
+
+### 🛡️ Phase 4: Production Hardening, Developer Feedback & Evaluation
+- **Interactive Developer Feedback**: Issue cards in the web UI include **"👍 Helpful"** and **"👎 Not helpful"** buttons that record user sentiment via `POST /api/feedback`.
+- **Telemetry & Observability Dashboard**: Accessible at `/dashboard`, visualizing review volume, average latency, severity breakdown, and live helpfulness ratings.
+- **Offline Evaluation Harness**: Benchmark review quality across 15 labeled test cases measuring Precision, Recall, F1, and clean-case False Positive Rate via `eval/run_eval.py`.
+- **Containerization**: Hardened multi-stage `Dockerfile` (non-root user, healthcheck) and `docker-compose.yml` with SQLite WAL directory volume.
+- **Continuous Integration**: GitHub Actions matrix workflow verifying Python 3.11 and 3.12, running `ruff check .`, test suite discovery, and Docker image builds.
 
 ---
 
-## Project Structure
+## Quickstart
 
-```text
-.
-├── .env.example                  # Environment variables template
-├── .gitignore                    # Git ignore rules
-├── requirements.txt              # Python dependencies
-├── README.md                     # Project documentation
-├── analysis/                     # Phase 3: Safe static analysis
-│   ├── __init__.py
-│   ├── models.py                 # StaticAnalysisFinding dataclass
-│   ├── bandit_runner.py          # Bandit runner with JSON parsing
-│   ├── semgrep_runner.py         # Semgrep runner with --metrics=off
-│   └── runner.py                 # Tempdir isolation & changed-lines filter
-├── app/
-│   ├── __init__.py
-│   ├── config.py                 # Configuration and environment settings
-│   ├── schemas.py                # FastAPI Pydantic schemas (ReviewRequest, ReviewResponse)
-│   ├── main.py                   # FastAPI application, routes, static mount, webhook mount
-│   └── static/
-│       ├── index.html            # Web UI markup
-│       ├── style.css             # UI styling & confidence badge styling
-│       └── app.js                # Vanilla JS: editor sync, API calls, dynamic rendering
-├── github_bot/
-│   ├── __init__.py
-│   ├── auth.py                   # GitHub App JWT & installation token manager
-│   ├── client.py                 # Lightweight REST client with httpx
-│   ├── config_loader.py          # Phase 3: .reviewer.yml loader & schema validation
-│   ├── diff_utils.py             # Patch parsing, commentable lines, file exclusions
-│   ├── publisher.py              # Review formatting, comment prioritization & 422 fallback
-│   ├── service.py                # End-to-end PR review orchestration & deduplication
-│   ├── webhook.py                # HMAC signature verification & webhook router
-│   └── review_pr.py              # CLI test runner
-├── reviewer/
-│   ├── __init__.py
-│   ├── chunking.py               # Phase 3: Patch chunker, hunk splitter & deduplicator
-│   ├── engine.py                 # Anthropic Claude engine with 1-shot retry logic
-│   ├── models.py                 # Domain models with confidence scoring
-│   └── prompts.py                # Delimited prompt structure (PR, README, Hints)
-└── tests/
-    ├── test_reviewer.py          # Phase 1 tests (prompts, engine retry, FastAPI routes)
-    ├── test_github_bot.py        # Phase 2 tests (signatures, diff parsing, fallbacks, CLI)
-    └── test_phase3.py            # Phase 3 tests (chunking, .reviewer.yml, hints, dedupe)
+### Option A: Local Development
+
+1. **Clone & Setup Virtual Environment:**
+   ```bash
+   git clone <repo-url>
+   cd "ai-code-reviewer"
+   python -m venv .venv
+
+   # Linux/macOS:
+   source .venv/bin/activate
+   # Windows:
+   .venv\Scripts\activate
+
+   pip install -r requirements.txt
+   ```
+
+2. **Configure Environment:**
+   ```bash
+   cp .env.example .env
+   # Edit .env and supply your ANTHROPIC_API_KEY
+   ```
+
+3. **Start Application Server:**
+   ```bash
+   uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+   ```
+
+4. **Access Applications:**
+   - Web Workspace: [http://localhost:8000/app](http://localhost:8000/app)
+   - Landing Page: [http://localhost:8000/](http://localhost:8000/)
+   - Analytics Dashboard: [http://localhost:8000/dashboard](http://localhost:8000/dashboard)
+   - API Docs: [http://localhost:8000/docs](http://localhost:8000/docs)
+
+### Option B: Docker Compose
+
+```bash
+# 1. Create .env file with your Anthropic key
+cp .env.example .env
+
+# 2. Build and launch container
+docker compose up -d
+
+# 3. View container health and logs
+docker compose logs -f
 ```
 
 ---
 
-## Installing Static Analysis Tools (Optional)
+## Environment Variables Reference
 
-Bandit and Semgrep are optional. If they are not installed or in your `PATH`, the review bot logs an informational message and proceeds with full AI code review without hints:
+| Variable | Default | Description |
+|:---|:---:|:---|
+| `ANTHROPIC_API_KEY` | *None* | **Required.** Anthropic API key for Claude completions. |
+| `ANTHROPIC_MODEL` | `claude-sonnet-5-5` | Target Claude model identifier. |
+| `ANTHROPIC_TIMEOUT_SECONDS` | `60.0` | HTTP client timeout in seconds for Anthropic API calls. |
+| `ANTHROPIC_MAX_TOKENS` | `4096` | Maximum token completion limit. |
+| `MAX_CODE_CHARS` | `60000` | Maximum character length allowed for web UI submissions (HTTP 413). |
+| `GITHUB_APP_ID` | `""` | GitHub App ID for pull request reviews. |
+| `GITHUB_PRIVATE_KEY_PATH` | `""` | Local path to the GitHub App `.pem` private key. |
+| `GITHUB_PRIVATE_KEY` | `""` | Raw PEM string (alternative to file path). |
+| `GITHUB_WEBHOOK_SECRET` | `""` | Secret configured in GitHub App for webhook HMAC verification. |
+| `MIN_SEVERITY` | `low` | Default minimum severity threshold (`low`, `medium`, `high`). |
+| `MAX_FILES` | `20` | Maximum changed files reviewed per PR. |
+| `MAX_DIFF_CHARS` | `100000` | Maximum total diff character limit per PR. |
+| `MAX_LLM_CALLS_PER_PR` | `8` | Maximum LLM review calls executed per PR. |
+| `MIN_CONFIDENCE` | `0.5` | Minimum confidence score (0.0–1.0) required to publish an issue. |
+| `DB_PATH` | `/app/data/reviews.db` | SQLite database file location (requires directory volume for WAL). |
+| `TRUST_PROXY` | `false` | Set to `true` when behind reverse proxy to respect `X-Forwarded-For`. |
+| `MAX_REVIEWS_PER_DAY` | `200` | Global daily review quota across UI and webhooks (0 = unlimited). |
+| `RATE_LIMIT_PER_MINUTE` | `20` | Sliding window per-IP rate limit for review requests. |
+| `ACCESS_TOKEN` | `""` | Optional shared bearer token for API endpoints. |
+| `DASHBOARD_PASSWORD` | `""` | Optional password protecting `/dashboard` via HTTP Basic Auth. |
 
-### Bandit (Python Security AST Linter)
-```bash
-pip install bandit
-```
+---
 
-### Semgrep (Multi-Language Pattern Scanner)
-```bash
-# Via pip:
-pip install semgrep
+## API Reference
 
-# Or on macOS via Homebrew:
-brew install semgrep
-```
+### `POST /api/review`
+Submits code or git diff for structured review.
+- **Headers:** `Content-Type: application/json`, optional `X-API-Key: <token>`
+- **Request Body:**
+  ```json
+  {
+    "code": "def add(a, b): return a + b",
+    "language": "python",
+    "mode": "code"
+  }
+  ```
+- **Response (200 OK):**
+  ```json
+  {
+    "review_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+    "summary": "Clean code with no defects.",
+    "issues": [
+      {
+        "id": "c1f72a4e-1b83-4a6c-941d-d02f5a6e8b11",
+        "line": 1,
+        "severity": "low",
+        "category": "style",
+        "title": "Missing docstring",
+        "explanation": "Public function lacks docstring documentation.",
+        "suggested_fix": "def add(a, b):\n    \"\"\"Adds two numbers.\"\"\"\n    return a + b",
+        "confidence": 0.85
+      }
+    ],
+    "total_issues": 1
+  }
+  ```
+
+### `POST /api/feedback`
+Records developer helpfulness feedback on an issue card.
+- **Request Body:**
+  ```json
+  {
+    "issue_id": "c1f72a4e-1b83-4a6c-941d-d02f5a6e8b11",
+    "feedback": "helpful"
+  }
+  ```
+- **Response (200 OK):**
+  ```json
+  {
+    "status": "success",
+    "issue_id": "c1f72a4e-1b83-4a6c-941d-d02f5a6e8b11",
+    "feedback": "helpful"
+  }
+  ```
+
+### `GET /api/dashboard/stats`
+Returns aggregated review telemetry, category distributions, and user sentiment.
+- **Response (200 OK):**
+  ```json
+  {
+    "total_reviews": 128,
+    "today_reviews": 14,
+    "total_issues": 342,
+    "helpful_count": 86,
+    "not_helpful_count": 8,
+    "helpfulness_rate": 91.5,
+    "avg_duration_ms": 1420,
+    "severity_counts": {"high": 42, "medium": 120, "low": 180},
+    "category_counts": {"security": 38, "bug": 112, "performance": 64, "style": 98, "tests": 30}
+  }
+  ```
+
+### `GET /api/health`
+Healthcheck endpoint for Docker, Kubernetes, and uptime monitoring.
+- **Response (200 OK):**
+  ```json
+  {
+    "status": "healthy",
+    "database": "connected",
+    "reviews_today": 14,
+    "max_reviews_per_day": 200
+  }
+  ```
+
+### `GET /api/config`
+Provides client frontend configuration (max code characters, default model, quota caps).
+
+### `POST /webhooks/github`
+Receives GitHub App pull request webhook events. Validates `X-Hub-Signature-256` and processes reviews asynchronously in background tasks.
+
+---
+
+## GitHub App Setup
+
+1. **Register a GitHub App:**
+   - Go to **Settings > Developer Settings > GitHub Apps > New GitHub App**.
+   - **Webhook URL:** `https://your-domain.com/webhooks/github`
+   - **Webhook Secret:** Choose a secure random string and set as `GITHUB_WEBHOOK_SECRET`.
+2. **Permissions:**
+   - **Repository Permissions:**
+     - *Pull Requests:* Read & Write
+     - *Contents:* Read-only
+     - *Metadata:* Read-only
+3. **Subscribe to Events:**
+   - Check **Pull request**.
+4. **Generate Private Key:**
+   - Under App settings, click **Generate a private key** (`.pem` file).
+   - Set `GITHUB_APP_ID` and `GITHUB_PRIVATE_KEY_PATH` in your `.env`.
+5. **Install App:**
+   - Install the GitHub App on your target repositories.
 
 ---
 
 ## Per-Repository Configuration (`.reviewer.yml`)
 
-Place a `.reviewer.yml` file in the root of your repository on your **default / base branch** (e.g. `main`).
-
-### Annotated Example `.reviewer.yml`
+Place `.reviewer.yml` in the root of your default branch (`main`):
 
 ```yaml
 # .reviewer.yml - AI Code Reviewer configuration
-
-# Minimum severity required to report an issue: 'low', 'medium', or 'high' (default: low)
 min_severity: low
 
-# Enabled review categories (omit 'style' to eliminate style nits)
 enabled_categories:
   - bug
   - security
@@ -164,108 +290,77 @@ enabled_categories:
   - tests
   # - style
 
-# Path glob patterns to exclude from code review
 ignore_path_globs:
   - "tests/**"
   - "docs/**"
   - "migrations/**"
   - "**/*.generated.py"
 
-# Maximum number of inline comments posted per PR review (default: 15)
 max_comments: 10
-
-# Minimum confidence score (0.0 to 1.0) required to report an issue (default: 0.5)
 min_confidence: 0.6
 
-# Custom guidelines appended to the prompt (size-capped to 2,000 characters)
 custom_guidelines: |
-  - All SQL queries must use parameterized placeholders; never format raw strings.
-  - Require type annotations for all new public functions.
-  - Ensure any new REST API endpoints include docstrings documenting error codes.
+  - All database queries must use parameterized bindings.
+  - Require type annotations on all new functions.
 ```
 
 ---
 
-## Getting Started
+## Running the Test Suite
 
-### 1. Prerequisites
-
-- Python 3.9+ (Python 3.11+ recommended)
-- An [Anthropic API Key](https://console.anthropic.com/)
-- (Optional) GitHub App credentials
-
-### 2. Setup Virtual Environment
+The official test suite uses standard Python `unittest`:
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+python -m unittest discover -s tests -t . -q
 ```
 
-### 3. Configure Environment Variables
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env`:
-```env
-# Anthropic LLM
-ANTHROPIC_API_KEY=sk-ant-api03-...
-ANTHROPIC_MODEL=claude-sonnet-5-5
-
-# GitHub App (Required for Phase 2 & 3 bot)
-GITHUB_APP_ID=123456
-GITHUB_PRIVATE_KEY_PATH=/path/to/your-app-private-key.pem
-GITHUB_WEBHOOK_SECRET=your_webhook_secret_here
-
-# Bot Limits & Safeguards
-MIN_SEVERITY=low
-MAX_FILES=20
-MAX_DIFF_CHARS=100000
-MAX_LLM_CALLS_PER_PR=8
-MIN_CONFIDENCE=0.5
-```
-
-### 4. Run the Web Server
-
-```bash
-uvicorn app.main:app --reload --port 8000
-```
-
-- Open the Web UI: **[http://localhost:8000](http://localhost:8000)**
-- Interactive API Docs: **[http://localhost:8000/docs](http://localhost:8000/docs)**
-- GitHub Webhook Endpoint: **`POST http://localhost:8000/webhooks/github`**
+All database operations in tests are strictly isolated inside temporary directories registered with `atexit` cleanup; tests will never modify or write to `data/reviews.db`.
 
 ---
 
-## Testing with the CLI
+## Quality Evaluation Harness
 
-You can run automated reviews directly against any pull request:
+Benchmark review accuracy and false-positive rates across 15 labeled test cases:
 
 ```bash
-# Safe simulation: prints review body, inline comments, and hints without posting to GitHub
-python -m github_bot.review_pr owner/repo 1 --dry-run
+# 1. Offline verification using deterministic mock engine (no API key needed)
+python eval/run_eval.py --mock
 
-# Live review: publishes review directly to the PR
-python -m github_bot.review_pr owner/repo 1
-
-# Force re-review: bypasses the head commit SHA deduplication cache
-python -m github_bot.review_pr owner/repo 1 --force
+# 2. Live verification against Anthropic Claude (requires ANTHROPIC_API_KEY)
+python eval/run_eval.py
 ```
+
+Outputs a Markdown table and summary metrics to stdout, and persists detailed run data to `eval_results/latest.json`.
 
 ---
 
-## Running the Automated Test Suite
+## Security Notes
 
-Run all unit and integration tests across all three phases:
+1. **Prompt Injection Hardening:** Code and diff inputs are wrapped inside explicit XML tags with system prompt directives instructing Claude to treat content strictly as data.
+2. **Path Traversal Defenses:** Static analysis runners strictly validate relative file paths, discarding any paths containing `..` or leading slashes.
+3. **Rate Limiting & Quotas:** Sliding-window per-IP limiter (`RATE_LIMIT_PER_MINUTE`) and daily global cap (`MAX_REVIEWS_PER_DAY`) mitigate resource exhaustion.
+4. **Source Code Privacy:** The SQLite analytics database stores review metadata, duration, and issue summaries; raw source code and diff contents are never persisted.
 
-```bash
-.venv/bin/python3 -m unittest discover tests
-```
+---
 
-Expected output:
-```text
-Ran 48 tests in 0.06s
-OK
-```
+## Limitations
+
+- **File-Level Token Limits:** Extremely large individual files (>60,000 characters) require pre-chunking or diff mode.
+- **Cross-File Symbol Resolution:** Reviews analyze modified files and surrounding context windows, but do not construct a full whole-repository semantic graph.
+- **Language Coverage for Static Hints:** Built-in static analysis runners currently support Python (Bandit) and multi-language rules via Semgrep.
+
+---
+
+## Future Work
+
+- **GitHub Reaction Feedback:** Automatically ingest developer emoji reactions (e.g. 👍 / 👎 on GitHub inline review comments) as feedback ratings (the `github_comment_links` database table provides the groundwork).
+- **Persistent Distributed Commit Lock:** Replace the current in-memory commit SHA lock with Redis or SQLite row locks to support multi-instance horizontal scaling.
+- **Expanded Static Linters:** Add native AST linters for TypeScript/JavaScript (ESLint), Go (`golangci-lint`), and Rust (`clippy`).
+- **Per-Repository Analytics:** Granular telemetry dashboards segmented by individual repository and team.
+
+---
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](file:///LICENSE) file for details.  
+Copyright (c) 2026 Narendra Yadav.
