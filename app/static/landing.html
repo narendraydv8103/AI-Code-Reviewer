@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Code Reviewer - Senior Engineer Precision</title>
+
+  <!-- Google Fonts: Plus Jakarta Sans & IBM Plex Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/static/landing.css">
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="/" class="brand">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 18 22 12 16 6"></polyline>
+            <polyline points="8 6 2 12 8 18"></polyline>
+          </svg>
+        </div>
+        <span class="brand-name">AI Code Reviewer</span>
+      </a>
+
+      <nav class="nav-links">
+        <a href="/dashboard" class="nav-link">Analytics Dashboard</a>
+        <a href="/docs" class="nav-link" target="_blank" rel="noopener">API Docs</a>
+        <a href="/app" class="btn btn-primary">Try the Reviewer</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main>
+    <section class="hero-section">
+      <div class="hero-container">
+        <div class="pill-badge">
+          <span class="pulse-dot"></span>
+          <span>Claude 3.5 Sonnet &bull; Static Analysis Hints &bull; Zero False Alarms</span>
+        </div>
+
+        <h1 class="hero-title">Automated Code Reviews with Senior Engineer Precision</h1>
+        <p class="hero-subtitle">
+          Reviews pull requests, unified diffs, and source code. Pinpoints real bugs, security vulnerabilities,
+          and performance bottlenecks while completely ignoring trivial style nits.
+        </p>
+
+        <div class="hero-actions">
+          <a href="/app" class="btn btn-hero-primary">Launch Reviewer Workspace</a>
+          <a href="/dashboard" class="btn btn-hero-secondary">View Live Metrics</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Key Capabilities Grid -->
+    <section class="features-section">
+      <div class="features-container">
+        <div class="section-header">
+          <h2 class="section-title">Engineered for High-Velocity Engineering Teams</h2>
+          <p class="section-subtitle">A defense-in-depth code review architecture that respects developer time.</p>
+        </div>
+
+        <div class="features-grid">
+          <!-- Feature 1 -->
+          <div class="feature-card">
+            <div class="feature-icon icon-blue">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+            </div>
+            <h3>Safe Static Analysis Hints</h3>
+            <p>Runs Bandit &amp; Semgrep AST linters in isolated sandbox containers with built-in rulesets. Passes findings as unverified hints for Claude to validate in context.</p>
+          </div>
+
+          <!-- Feature 2 -->
+          <div class="feature-card">
+            <div class="feature-icon icon-purple">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+              </svg>
+            </div>
+            <h3>Prompt-Injection Defense</h3>
+            <p>Treats all incoming PR code, diffs, and context inside strict XML delimiters as passive data. Rebuffs adversarial prompt-override attempts in comments or string literals.</p>
+          </div>
+
+          <!-- Feature 3 -->
+          <div class="feature-card">
+            <div class="feature-icon icon-emerald">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+              </svg>
+            </div>
+            <h3>Noise Reduction &amp; Confidence</h3>
+            <p>Every finding carries a confidence score (0.0 to 1.0). Trivial style nits are suppressed by default, and comments are capped to focus on high-impact defects.</p>
+          </div>
+
+          <!-- Feature 4 -->
+          <div class="feature-card">
+            <div class="feature-icon icon-amber">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+            </div>
+            <h3>Per-Repo <code>.reviewer.yml</code></h3>
+            <p>Configure severity floors, enabled categories, ignore path globs, and custom team guidelines fetched safely from the target base branch.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Architecture Callout -->
+    <section class="banner-section">
+      <div class="banner-card">
+        <div>
+          <h2>Ready to review your pull requests?</h2>
+          <p>Install the GitHub App or paste diffs directly into the web workspace.</p>
+        </div>
+        <a href="/app" class="btn btn-banner">Launch Web Workspace &rarr;</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-container">
+      <p>&copy; 2026 AI Code Reviewer. Released under the MIT License.</p>
+      <div class="footer-links">
+        <a href="/app">Reviewer App</a>
+        <a href="/dashboard">Dashboard</a>
+        <a href="/docs">Swagger API</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
+

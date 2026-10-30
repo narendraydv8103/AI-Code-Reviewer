@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analytics Dashboard - AI Code Reviewer</title>
+
+  <!-- Google Fonts: Plus Jakarta Sans & IBM Plex Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Chart.js CDN (Lightweight, zero-build) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <link rel="stylesheet" href="/static/dashboard.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="top-bar">
+    <div class="brand">
+      <a href="/" class="brand-link">
+        <div class="logo-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 18 22 12 16 6"></polyline>
+            <polyline points="8 6 2 12 8 18"></polyline>
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">AI Code Reviewer</h1>
+          <span class="brand-subtitle">Telemetry &amp; Developer Feedback Dashboard</span>
+        </div>
+      </a>
+    </div>
+
+    <div class="nav-actions">
+      <a href="/" class="btn-secondary">Landing Page</a>
+      <a href="/app" class="btn btn-primary">Open Reviewer App</a>
+    </div>
+  </header>
+
+  <main class="dashboard-container">
+
+    <!-- KPI Summary Row -->
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <span class="kpi-label">Total Reviews</span>
+        <div class="kpi-value" id="kpi-total-reviews">-</div>
+        <span class="kpi-subtext" id="kpi-today-reviews">0 today</span>
+      </div>
+
+      <div class="kpi-card">
+        <span class="kpi-label">Helpfulness Rate</span>
+        <div class="kpi-value text-emerald" id="kpi-helpfulness-rate">--%</div>
+        <span class="kpi-subtext" id="kpi-feedback-counts">0 ratings</span>
+      </div>
+
+      <div class="kpi-card">
+        <span class="kpi-label">Issues Discovered</span>
+        <div class="kpi-value" id="kpi-total-issues">-</div>
+        <span class="kpi-subtext" id="kpi-severity-split">High: 0 &bull; Med: 0 &bull; Low: 0</span>
+      </div>
+
+      <div class="kpi-card">
+        <span class="kpi-label">Avg Review Latency</span>
+        <div class="kpi-value" id="kpi-avg-latency">- ms</div>
+        <span class="kpi-subtext">Engine processing time</span>
+      </div>
+    </section>
+
+    <!-- Visual Charts Grid -->
+    <section class="charts-grid">
+      <!-- Chart 1: Reviews Over Time -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>Reviews Volume (Last 14 Days)</h3>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="reviewsTrendChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Chart 2: Issues by Category -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3>Findings by Category</h3>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="categoryChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Recent Reviews Table -->
+    <section class="table-section">
+      <div class="section-card">
+        <div class="table-header">
+          <h3>Recent Code Reviews</h3>
+          <span class="table-subtext">Displaying latest 10 reviews</span>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Source</th>
+                <th>Target / PR</th>
+                <th>Model</th>
+                <th>Duration</th>
+                <th>Issues</th>
+                <th>Timestamp</th>
+              </tr>
+            </thead>
+            <tbody id="recent-reviews-tbody">
+              <tr>
+                <td colspan="6" class="text-center text-muted">Loading analytics data...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="/static/dashboard.js"></script>
+</body>
+</html>
+

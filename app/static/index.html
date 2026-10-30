@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Code Reviewer</title>
+  
+  <!-- Google Fonts: Plus Jakarta Sans & IBM Plex Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+  <!-- Top Navigation & Control Bar -->
+  <header class="top-bar">
+    <div class="brand">
+      <div class="logo-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="16 18 22 12 16 6"></polyline>
+          <polyline points="8 6 2 12 8 18"></polyline>
+        </svg>
+      </div>
+      <div>
+        <h1 class="brand-title">AI Code Reviewer</h1>
+        <span class="brand-subtitle">Automated structural & security analysis</span>
+      </div>
+    </div>
+
+    <div class="controls-group">
+      <!-- Mode Toggle Switch -->
+      <div class="segmented-control" role="group" aria-label="Review Mode">
+        <button type="button" class="segment-btn active" id="mode-code-btn" data-mode="code">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 18 22 12 16 6"></polyline>
+            <polyline points="8 6 2 12 8 18"></polyline>
+          </svg>
+          Full Code
+        </button>
+        <button type="button" class="segment-btn" id="mode-diff-btn" data-mode="diff">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3v18"></path>
+            <path d="M3 12h18"></path>
+          </svg>
+          Git Diff
+        </button>
+      </div>
+
+      <!-- Language Selector Dropdown -->
+      <div class="select-wrapper">
+        <label for="language-select" class="sr-only">Language</label>
+        <select id="language-select" class="form-select" aria-label="Select Language">
+          <option value="python">Python</option>
+          <option value="javascript">JavaScript</option>
+          <option value="typescript">TypeScript</option>
+          <option value="go">Go</option>
+          <option value="rust">Rust</option>
+          <option value="java">Java</option>
+          <option value="cpp">C / C++</option>
+          <option value="csharp">C#</option>
+          <option value="sql">SQL</option>
+          <option value="html-css">HTML / CSS</option>
+          <option value="other">Other / Plaintext</option>
+        </select>
+      </div>
+
+      <!-- Review Action Button -->
+      <button type="button" id="review-btn" class="btn btn-primary">
+        <span class="btn-spinner" id="btn-spinner" aria-hidden="true"></span>
+        <svg id="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="5 3 19 12 5 21 5 3"></polygon>
+        </svg>
+        <span id="btn-text">Review code</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Error Notification Toast/Banner -->
+  <div id="error-banner" class="alert-banner" role="alert" style="display: none;">
+    <div class="alert-content">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="alert-icon">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <span id="error-message">An unexpected error occurred.</span>
+    </div>
+    <button type="button" class="alert-close" id="error-close-btn" aria-label="Close error">&times;</button>
+  </div>
+
+  <!-- Main Dual-Column Workspace -->
+  <main class="workspace-container">
+    
+    <!-- Left Column: Code Editor with Line Numbers -->
+    <section class="editor-column">
+      <div class="panel-header dark-header">
+        <div class="panel-title-wrapper">
+          <span class="panel-title" id="editor-panel-title">Source Code</span>
+          <span class="badge dark-badge" id="editor-mode-badge">code</span>
+        </div>
+        <div class="sample-actions">
+          <button type="button" class="btn-link" id="load-sample-btn">Sample Code</button>
+          <button type="button" class="btn-link" id="load-diff-sample-btn">Sample Diff</button>
+          <button type="button" class="btn-link btn-link-muted" id="clear-btn">Clear</button>
+        </div>
+      </div>
+
+      <!-- Dark Editor Container (#0B1220) -->
+      <div class="code-editor-panel">
+        <div class="editor-gutter" id="line-gutter" aria-hidden="true">1</div>
+        <textarea
+          id="code-input"
+          class="code-textarea"
+          spellcheck="false"
+          placeholder="Paste your source code here or click 'Sample Code' to try an example..."
+          aria-label="Code or Diff Input"
+        ></textarea>
+      </div>
+
+      <div class="editor-footer">
+        <span class="editor-hint">Tip: Use <kbd>Tab</kbd> to indent. Supports snippets up to 60k chars.</span>
+        <div class="char-counter" id="char-counter">0 / 60,000 chars</div>
+      </div>
+    </section>
+
+    <!-- Right Column: Review Results Area -->
+    <section class="results-column">
+      
+      <!-- Placeholder / Empty State -->
+      <div id="results-empty-state" class="empty-state-card">
+        <div class="empty-icon-wrapper">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+        </div>
+        <h3>No Review Generated Yet</h3>
+        <p>Paste your code or git diff on the left and click <strong>"Review code"</strong> to analyze bugs, security flaws, performance, style, and missing tests.</p>
+      </div>
+
+      <!-- Loading State -->
+      <div id="results-loading-state" class="loading-state-card" style="display: none;">
+        <div class="loading-spinner-large"></div>
+        <h3>Reviewing your code...</h3>
+        <p id="loading-subtext">Claude is analyzing logic, security vulnerabilities, edge cases, and missing tests.</p>
+      </div>
+
+      <!-- Populated Review Results (Hidden initially) -->
+      <div id="results-content" style="display: none;">
+        
+        <!-- Summary Header Card -->
+        <div class="summary-card">
+          <div class="summary-header">
+            <div>
+              <span class="summary-badge">Review Summary</span>
+              <h2 class="summary-title" id="summary-verdict">Analysis Complete</h2>
+            </div>
+            <div class="issue-stat-total" id="stat-total-chip">0 issues found</div>
+          </div>
+          <p class="summary-text" id="summary-text"></p>
+        </div>
+
+        <!-- Filter Chips Row -->
+        <div class="filter-bar" role="group" aria-label="Filter issues by severity">
+          <span class="filter-label">Filter:</span>
+          <button type="button" class="filter-chip active" data-filter="all" id="filter-all">
+            All <span class="chip-count" id="count-all">0</span>
+          </button>
+          <button type="button" class="filter-chip filter-high" data-filter="high" id="filter-high">
+            High <span class="chip-count" id="count-high">0</span>
+          </button>
+          <button type="button" class="filter-chip filter-medium" data-filter="medium" id="filter-medium">
+            Medium <span class="chip-count" id="count-medium">0</span>
+          </button>
+          <button type="button" class="filter-chip filter-low" data-filter="low" id="filter-low">
+            Low <span class="chip-count" id="count-low">0</span>
+          </button>
+        </div>
+
+        <!-- Cards List Container -->
+        <div id="issues-list" class="issues-list">
+          <!-- Dynamic Issue Cards will be injected here -->
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
+
