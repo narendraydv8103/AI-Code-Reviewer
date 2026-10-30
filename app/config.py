@@ -112,7 +112,11 @@ MIN_CONFIDENCE = float(os.getenv("MIN_CONFIDENCE", "0.5"))
 
 # Database & Storage
 # WAL mode creates companion files (-wal and -shm), so a directory volume is required
-DEFAULT_DB_PATH = str(BASE_DIR / "data" / "reviews.db")
+DATA_DIR = os.getenv("DATA_DIR")
+if DATA_DIR:
+    DEFAULT_DB_PATH = str(Path(DATA_DIR) / "reviews.db")
+else:
+    DEFAULT_DB_PATH = str(BASE_DIR / "data" / "reviews.db")
 DB_PATH = os.getenv("DB_PATH", DEFAULT_DB_PATH)
 
 # Security, Hardening & Quotas
