@@ -1,0 +1,14 @@
+{
+  "id": "off-by-one",
+  "language": "python",
+  "mode": "code",
+  "input": "def print_elements(items):\n    # Loops one index past the end of the array causing IndexError\n    for i in range(len(items) + 1):\n        print(items[i])\n",
+  "expected": [
+    {
+      "category": "bug",
+      "line": 4,
+      "min_severity": "medium",
+      "title": "Off-by-one Error"
+    }
+  ]
+}

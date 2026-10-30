@@ -1,0 +1,14 @@
+{
+  "id": "resource-leak",
+  "language": "python",
+  "mode": "code",
+  "input": "def dump_data(filename, data):\n    # File opened without context manager or close() call\n    f = open(filename, \"w\")\n    f.write(data)\n    return True\n",
+  "expected": [
+    {
+      "category": "bug",
+      "line": 3,
+      "min_severity": "low",
+      "title": "Unclosed File Resource Leak"
+    }
+  ]
+}

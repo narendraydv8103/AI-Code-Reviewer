@@ -1,0 +1,14 @@
+{
+  "id": "unused-variable",
+  "language": "python",
+  "mode": "code",
+  "input": "def calculate_total(prices):\n    tax_rate = 0.08\n    unused_discount = 0.15\n    total = sum(prices) * (1 + tax_rate)\n    return total\n",
+  "expected": [
+    {
+      "category": "style",
+      "line": 3,
+      "min_severity": "low",
+      "title": "Unused Variable"
+    }
+  ]
+}

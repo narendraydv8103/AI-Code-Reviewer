@@ -1,0 +1,14 @@
+{
+  "id": "path-traversal",
+  "language": "python",
+  "mode": "code",
+  "input": "from pathlib import Path\n\ndef read_user_file(filename):\n    # Directory traversal vulnerability without path sanitation\n    filepath = f\"/var/data/{filename}\"\n    with open(filepath, \"r\") as f:\n        return f.read()\n",
+  "expected": [
+    {
+      "category": "security",
+      "line": 5,
+      "min_severity": "high",
+      "title": "Path Traversal"
+    }
+  ]
+}

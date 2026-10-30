@@ -1,0 +1,7 @@
+{
+  "id": "clean-helper-refactor",
+  "language": "python",
+  "mode": "code",
+  "input": "def clamp(val: float, minimum: float, maximum: float) -> float:\n    \"\"\"Clamps val between minimum and maximum bounds safely.\"\"\"\n    if minimum > maximum:\n        raise ValueError(\"minimum cannot be greater than maximum\")\n    return max(minimum, min(val, maximum))\n",
+  "expected": []
+}

@@ -1,0 +1,14 @@
+{
+  "id": "n-plus-one-loop",
+  "language": "python",
+  "mode": "code",
+  "input": "import sqlite3\n\ndef get_all_user_orders(user_ids):\n    conn = sqlite3.connect('app.db')\n    results = {}\n    for uid in user_ids:\n        # N+1 query vulnerability inside loop\n        orders = conn.execute(f\"SELECT * FROM orders WHERE user_id = ?\", (uid,)).fetchall()\n        results[uid] = orders\n    return results\n",
+  "expected": [
+    {
+      "category": "performance",
+      "line": 8,
+      "min_severity": "medium",
+      "title": "N+1 Query in Loop"
+    }
+  ]
+}

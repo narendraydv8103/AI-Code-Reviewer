@@ -1,0 +1,14 @@
+{
+  "id": "sql-injection",
+  "language": "python",
+  "mode": "code",
+  "input": "import sqlite3\n\ndef search_users(user_input):\n    conn = sqlite3.connect('app.db')\n    query = f\"SELECT id, name FROM users WHERE username = '{user_input}'\"\n    return conn.execute(query).fetchall()\n",
+  "expected": [
+    {
+      "category": "security",
+      "line": 5,
+      "min_severity": "high",
+      "title": "SQL Injection"
+    }
+  ]
+}

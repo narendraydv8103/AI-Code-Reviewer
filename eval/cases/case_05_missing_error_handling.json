@@ -1,0 +1,14 @@
+{
+  "id": "missing-error-handling",
+  "language": "python",
+  "mode": "code",
+  "input": "import json\n\ndef parse_user_config(config_str):\n    # Unhandled json.loads error and missing None check\n    data = json.loads(config_str)\n    timeout = data['settings']['timeout']\n    return int(timeout)\n",
+  "expected": [
+    {
+      "category": "bug",
+      "line": 5,
+      "min_severity": "low",
+      "title": "Missing Error Handling"
+    }
+  ]
+}

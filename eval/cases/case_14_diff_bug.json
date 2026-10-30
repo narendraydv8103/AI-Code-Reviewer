@@ -1,0 +1,14 @@
+{
+  "id": "diff-security-auth-bypass",
+  "language": "python",
+  "mode": "diff",
+  "input": "diff --git a/services/auth.py b/services/auth.py\n--- a/services/auth.py\n+++ b/services/auth.py\n@@ -20,5 +20,5 @@ def verify_user_permissions(user_role: str, action: str) -> bool:\n-    if user_role == 'admin':\n+    if user_role != 'guest':\n         return True\n     return action == 'read'\n",
+  "expected": [
+    {
+      "category": "security",
+      "line": 20,
+      "min_severity": "high",
+      "title": "Broken Access Control Permission Bypass"
+    }
+  ]
+}

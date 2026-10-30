@@ -1,0 +1,14 @@
+{
+  "id": "missing-tests",
+  "language": "python",
+  "mode": "code",
+  "input": "class FinancialLedger:\n    # Critical accounting logic introduced with no unit tests\n    def transfer_funds(self, source_acc, dest_acc, amount):\n        if source_acc.balance < amount:\n            raise ValueError('Insufficient funds')\n        source_acc.balance -= amount\n        dest_acc.balance += amount\n",
+  "expected": [
+    {
+      "category": "tests",
+      "line": 3,
+      "min_severity": "low",
+      "title": "Missing Unit Tests"
+    }
+  ]
+}
