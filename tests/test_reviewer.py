@@ -24,6 +24,7 @@ from reviewer.engine import (
 from app import config
 from app.main import app
 from fastapi.testclient import TestClient
+from tests.base import BaseTestCase
 
 
 class TestPromptsAndFormatting(unittest.TestCase):
@@ -209,10 +210,11 @@ class TestReviewEngine(unittest.TestCase):
             engine.review("code")
 
 
-class TestFastAPIRoutes(unittest.TestCase):
+class TestFastAPIRoutes(BaseTestCase):
     """Verifies FastAPI routing, validation, static files, and error responses."""
 
     def setUp(self):
+        super().setUp()
         self.client = TestClient(app)
 
     def test_get_root_serves_html(self):

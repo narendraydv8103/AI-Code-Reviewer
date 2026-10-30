@@ -13,6 +13,7 @@ from github_bot import auth, diff_utils, publisher, service
 from github_bot.client import GitHubClient, GitHubReviewCommentError
 from github_bot.webhook import verify_signature
 from reviewer.models import ReviewIssue, ReviewResult
+from tests.base import BaseTestCase
 
 
 class TestDiffUtils(unittest.TestCase):
@@ -173,10 +174,11 @@ class TestPublisherAndFormatting(unittest.TestCase):
         self.assertIn("foo.py", second_call_kwargs["body"])
 
 
-class TestWebhookEndpoints(unittest.TestCase):
+class TestWebhookEndpoints(BaseTestCase):
     """Verifies HMAC signature verification, event filtering, and background task enqueuing."""
 
     def setUp(self):
+        super().setUp()
         self.client = TestClient(app)
         self.secret = "test_webhook_secret_123"
         config.GITHUB_WEBHOOK_SECRET = self.secret
@@ -323,12 +325,14 @@ class TestWebhookEndpoints(unittest.TestCase):
         self.assertEqual(data["pull_number"], 42)
 
 
-class TestServicePipeline(unittest.TestCase):
+class TestServicePipeline(BaseTestCase):
     """Verifies end-to-end service orchestration, caps, dry-run, and deduplication."""
 
     def setUp(self):
+        super().setUp()
         service.clear_reviewed_commits_cache()
 
+    @patch("github_bot.client.GitHubClient.get_file_content", return_value="def add(a, b):\n    return a + b\n    pass\n")
     @patch("github_bot.auth.get_installation_access_token")
     @patch("github_bot.client.GitHubClient.get_pull_request")
     @patch("github_bot.client.GitHubClient.get_pull_request_files")
@@ -338,7 +342,8 @@ class TestServicePipeline(unittest.TestCase):
         mock_create_review,
         mock_get_files,
         mock_get_pr,
-        mock_get_token
+        mock_get_token,
+        mock_get_file_content
     ):
         mock_get_token.return_value = "ghs_test_token"
         mock_get_pr.return_value = {

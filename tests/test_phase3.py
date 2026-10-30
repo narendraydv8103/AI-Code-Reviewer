@@ -16,6 +16,7 @@ from reviewer.chunking import (
 )
 from reviewer.models import ReviewIssue, ReviewResult
 from reviewer.prompts import build_review_prompt
+from tests.base import BaseTestCase
 
 
 class TestPatchChunkingAndMerging(unittest.TestCase):
@@ -281,8 +282,11 @@ class TestPromptContextAndDelimiters(unittest.TestCase):
         self.assertIn("</custom_guidelines>", prompt)
 
 
-class TestNoiseReductionAndCommentCapping(unittest.TestCase):
+class TestNoiseReductionAndCommentCapping(BaseTestCase):
     """Verifies confidence filtering, severity prioritization, and comment capping."""
+
+    def setUp(self):
+        super().setUp()
 
     def test_prioritize_and_cap_comments(self):
         comments = [
@@ -312,9 +316,10 @@ class TestNoiseReductionAndCommentCapping(unittest.TestCase):
         self.assertEqual(kept[0]["path"], "b.py")  # High (conf 0.95)
         self.assertEqual(kept[1]["path"], "d.py")  # High (conf 0.80)
 
+    @patch("github_bot.client.GitHubClient.get_file_content", return_value=None)
     @patch("github_bot.auth.get_installation_access_token")
     @patch("github_bot.client.GitHubClient.get_pull_request")
-    def test_review_lock_released_on_failure(self, mock_get_pr, mock_get_token):
+    def test_review_lock_released_on_failure(self, mock_get_pr, mock_get_token, mock_get_content):
         mock_get_token.return_value = "token"
         mock_get_pr.return_value = {
             "head": {"sha": "sha_fail_123"},
@@ -337,6 +342,12 @@ class TestNoiseReductionAndCommentCapping(unittest.TestCase):
 
         # Confirm lock was released so review can be retried
         self.assertFalse(service.is_commit_reviewed("owner/repo", "sha_fail_123"))
+
+
+class TestDbIsolation(unittest.TestCase):
+    def test_db_path_is_temporary(self):
+        from app import config
+        self.assertIn("ai_code_reviewer_tests_", str(config.DB_PATH))
 
 
 if __name__ == "__main__":
