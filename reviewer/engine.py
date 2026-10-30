@@ -85,7 +85,7 @@ class ReviewEngine:
         timeout: Optional[float] = None,
         max_tokens: Optional[int] = None,
     ):
-        self.api_key = api_key or config.ANTHROPIC_API_KEY
+        self.api_key = api_key if api_key is not None else config.ANTHROPIC_API_KEY
         self.model = model or config.ANTHROPIC_MODEL
         self.timeout = timeout if timeout is not None else config.ANTHROPIC_TIMEOUT_SECONDS
         self.max_tokens = max_tokens if max_tokens is not None else config.ANTHROPIC_MAX_TOKENS
@@ -141,7 +141,6 @@ class ReviewEngine:
             response = client.messages.create(
                 model=self.model,
                 max_tokens=self.max_tokens,
-                temperature=0.1,
                 system=SYSTEM_PROMPT,
                 messages=messages,
             )
@@ -194,7 +193,6 @@ class ReviewEngine:
             retry_response = client.messages.create(
                 model=self.model,
                 max_tokens=self.max_tokens,
-                temperature=0.0,
                 system=SYSTEM_PROMPT,
                 messages=retry_messages,
             )
