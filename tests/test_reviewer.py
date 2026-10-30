@@ -120,6 +120,15 @@ class TestDomainModels(unittest.TestCase):
 class TestReviewEngine(unittest.TestCase):
     """Verifies ReviewEngine Anthropic calling, retry behavior, and error handling."""
 
+    def setUp(self):
+        super().setUp()
+        self.provider_patcher = patch.object(config, "get_active_provider", return_value="anthropic")
+        self.provider_patcher.start()
+
+    def tearDown(self):
+        self.provider_patcher.stop()
+        super().tearDown()
+
     def test_missing_api_key_raises_auth_error(self):
         engine = ReviewEngine(api_key="")
         with self.assertRaises(ReviewAuthError):
@@ -223,7 +232,7 @@ class TestFastAPIRoutes(BaseTestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIn("max_code_chars", data)
-        self.assertEqual(data["default_model"], config.ANTHROPIC_MODEL)
+        self.assertEqual(data["default_model"], config.get_active_model())
 
     def test_review_empty_input_returns_400(self):
         response = self.client.post("/api/review", json={

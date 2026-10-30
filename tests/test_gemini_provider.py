@@ -5,8 +5,10 @@ import json
 from unittest.mock import MagicMock, patch
 
 import httpx
+from fastapi.testclient import TestClient
 
 from app import config
+from app.main import app
 from reviewer.engine import (
     ReviewAuthError,
     ReviewEngine,
@@ -51,7 +53,39 @@ class TestGeminiProvider(BaseTestCase):
         provider = GeminiProvider(api_key="")
         with self.assertRaises(ReviewAuthError) as ctx:
             provider.complete(system="sys", user="user")
-        self.assertIn("GEMINI_API_KEY", str(ctx.exception))
+        self.assertEqual(str(ctx.exception), "Gemini API key is not configured. Add GEMINI_API_KEY to your .env file.")
+
+    def test_placeholder_api_keys_raise_auth_error(self):
+        for placeholder in ("PASTE_YOUR_GEMINI_API_KEY_HERE", "your_gemini_api_key_here"):
+            provider = GeminiProvider(api_key=placeholder)
+            with self.assertRaises(ReviewAuthError) as ctx:
+                provider.complete(system="sys", user="user")
+            self.assertEqual(
+                str(ctx.exception),
+                "Gemini API key is not configured. Add GEMINI_API_KEY to your .env file."
+            )
+
+    def test_health_and_config_with_placeholder_gemini_key(self):
+        with patch.object(config, "get_active_provider", return_value="gemini"), \
+             patch.object(config, "get_active_api_key", return_value="PASTE_YOUR_GEMINI_API_KEY_HERE"), \
+             patch.object(config, "has_active_api_key", return_value=False):
+            client = TestClient(app)
+
+            # 1. Health check returns degraded with exact message
+            res_health = client.get("/api/health")
+            self.assertEqual(res_health.status_code, 200)
+            data_health = res_health.json()
+            self.assertEqual(data_health["status"], "degraded")
+            self.assertEqual(
+                data_health["message"],
+                "Gemini API key is not configured. Add GEMINI_API_KEY to your .env file."
+            )
+
+            # 2. Config check returns has_api_key: False
+            res_cfg = client.get("/api/config")
+            self.assertEqual(res_cfg.status_code, 200)
+            data_cfg = res_cfg.json()
+            self.assertFalse(data_cfg["has_api_key"])
 
     @patch("httpx.Client.post")
     def test_gemini_success_path(self, mock_post):

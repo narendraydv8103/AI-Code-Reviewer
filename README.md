@@ -109,7 +109,8 @@ flowchart TD
 2. **Configure Environment:**
    ```bash
    cp .env.example .env
-   # Edit .env and supply your ANTHROPIC_API_KEY
+   # Edit .env and supply your GEMINI_API_KEY (free at https://aistudio.google.com)
+   # Or optionally set LLM_PROVIDER=anthropic with ANTHROPIC_API_KEY
    ```
 
 3. **Start Application Server:**
@@ -171,16 +172,16 @@ GEMINI_API_KEY=your_gemini_api_key_here
 
 | Variable | Default | Description |
 |:---|:---:|:---|
-| `LLM_PROVIDER` | `anthropic` | Active AI provider (`anthropic` or `gemini`). |
-| `ANTHROPIC_API_KEY` | `""` | Anthropic API key (required if `LLM_PROVIDER=anthropic`). |
-| `ANTHROPIC_MODEL` | `claude-sonnet-5-5` | Target Claude model identifier. |
-| `ANTHROPIC_TIMEOUT_SECONDS` | `60.0` | HTTP client timeout in seconds for Anthropic API calls. |
-| `ANTHROPIC_MAX_TOKENS` | `4096` | Maximum token completion limit for Anthropic. |
-| `GEMINI_API_KEY` | `""` | Google Gemini API key (required if `LLM_PROVIDER=gemini`). |
+| `LLM_PROVIDER` | `gemini` | Active AI provider (`gemini` [recommended free tier] or `anthropic`). |
+| `GEMINI_API_KEY` | `""` | Google Gemini API key (recommended free tier from [Google AI Studio](https://aistudio.google.com/)). |
 | `GEMINI_MODEL` | `gemini-2.5-flash` | Target Gemini model identifier (e.g. `gemini-2.5-flash`, `gemini-2.0-flash`). |
 | `GEMINI_TIMEOUT_SECONDS` | `60.0` | HTTP client timeout in seconds for Gemini REST API calls. |
 | `GEMINI_MAX_TOKENS` | `4096` | Maximum token completion limit for Gemini. |
-| `LLM_MIN_INTERVAL_SECONDS` | `4.0` *(gemini)* / `0.0` *(anthropic)* | Configurable minimum delay (seconds) between LLM calls to prevent 429 rate limits. |
+| `LLM_MIN_INTERVAL_SECONDS` | `4.0` *(gemini)* / `0.0` *(anthropic)* | Configurable minimum delay (seconds) between LLM calls to prevent free-tier 429 rate limits. |
+| `ANTHROPIC_API_KEY` | `""` | *(Optional)* Anthropic API key (required only if `LLM_PROVIDER=anthropic`). |
+| `ANTHROPIC_MODEL` | `claude-sonnet-5-5` | *(Optional)* Target Claude model identifier. |
+| `ANTHROPIC_TIMEOUT_SECONDS` | `60.0` | *(Optional)* HTTP client timeout in seconds for Anthropic API calls. |
+| `ANTHROPIC_MAX_TOKENS` | `4096` | *(Optional)* Maximum token completion limit for Anthropic. |
 | `MAX_CODE_CHARS` | `60000` | Maximum character length allowed for web UI submissions (HTTP 413). |
 | `GITHUB_APP_ID` | `""` | GitHub App ID for pull request reviews. |
 | `GITHUB_PRIVATE_KEY_PATH` | `""` | Local path to the GitHub App `.pem` private key. |

@@ -91,10 +91,11 @@ class AnthropicProvider(BaseProvider):
 
     def _get_client(self):
         import anthropic
-        if not self.api_key or not self.api_key.strip():
+        key = self.api_key.strip() if self.api_key else ""
+        if not key or key in config.ANTHROPIC_KEY_PLACEHOLDERS:
             raise ReviewAuthError("Anthropic API key is not configured. Please set ANTHROPIC_API_KEY in your .env or environment.")
         return anthropic.Anthropic(
-            api_key=self.api_key.strip(),
+            api_key=key,
             timeout=self.timeout,
         )
 
@@ -189,8 +190,9 @@ class GeminiProvider(BaseProvider):
         timeout: Optional[float] = None,
         history: Optional[List[Dict[str, str]]] = None,
     ) -> str:
-        if not self.api_key or not self.api_key.strip():
-            raise ReviewAuthError("Gemini API key is not configured. Please set GEMINI_API_KEY in your .env or environment.")
+        key = self.api_key.strip() if self.api_key else ""
+        if not key or key in config.GEMINI_KEY_PLACEHOLDERS:
+            raise ReviewAuthError("Gemini API key is not configured. Add GEMINI_API_KEY to your .env file.")
 
         effective_max_tokens = max_tokens or self.max_tokens
         effective_timeout = timeout or self.timeout

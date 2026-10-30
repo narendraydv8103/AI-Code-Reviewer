@@ -10,8 +10,22 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
-# LLM Provider selection ('anthropic' | 'gemini', default: 'anthropic')
-LLM_PROVIDER = os.getenv("LLM_PROVIDER", "anthropic").lower().strip()
+# LLM Provider selection ('gemini' | 'anthropic', default: 'gemini')
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "gemini").lower().strip()
+
+# Known placeholder key strings that indicate the key is not yet configured
+GEMINI_KEY_PLACEHOLDERS = {
+    "",
+    "PASTE_YOUR_GEMINI_API_KEY_HERE",
+    "your_gemini_api_key_here",
+    "your_api_key_here",
+}
+
+ANTHROPIC_KEY_PLACEHOLDERS = {
+    "",
+    "your_anthropic_api_key_here",
+    "your_api_key_here",
+}
 
 # Anthropic Claude configuration
 DEFAULT_MODEL = "claude-sonnet-5-5"
@@ -56,8 +70,12 @@ def get_active_api_key() -> str:
 
 
 def has_active_api_key() -> bool:
-    """Returns True if the active provider has an API key configured."""
-    return bool(get_active_api_key().strip())
+    """Returns True if the active provider has an actual API key configured (not empty or placeholder)."""
+    provider = get_active_provider()
+    key = get_active_api_key().strip()
+    if provider == "gemini":
+        return bool(key) and key not in GEMINI_KEY_PLACEHOLDERS
+    return bool(key) and key not in ANTHROPIC_KEY_PLACEHOLDERS
 
 
 def get_active_timeout() -> float:

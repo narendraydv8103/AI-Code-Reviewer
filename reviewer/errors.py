@@ -19,9 +19,10 @@ class ReviewAuthError(ReviewEngineError):
     def __init__(self, message: Optional[str] = None):
         if not message:
             provider = config.get_active_provider()
-            key_name = "GEMINI_API_KEY" if provider == "gemini" else "ANTHROPIC_API_KEY"
-            provider_title = "Google Gemini" if provider == "gemini" else "Anthropic"
-            message = f"{provider_title} API key is invalid or not configured. Please set {key_name} in your environment."
+            if provider == "gemini":
+                message = "Gemini API key is not configured. Add GEMINI_API_KEY to your .env file."
+            else:
+                message = "Anthropic API key is not configured. Please set ANTHROPIC_API_KEY in your .env or environment."
         super().__init__(message, status_code=500)
 
 
@@ -53,3 +54,4 @@ class ReviewParsingError(ReviewEngineError):
             provider_title = "Google Gemini" if provider == "gemini" else "Anthropic"
             message = f"The {provider_title} review service returned an unparseable response after retry. Please try again."
         super().__init__(message, status_code=502)
+

@@ -122,14 +122,25 @@ async def health_check():
         logger.error("Database healthcheck failed: %s", e)
         db_status = f"unhealthy: {e}"
 
-    return {
-        "status": "healthy" if db_status == "connected" else "degraded",
+    provider = config.get_active_provider()
+    has_key = config.has_active_api_key()
+    is_healthy = (db_status == "connected") and has_key
+
+    res = {
+        "status": "healthy" if is_healthy else "degraded",
         "database": db_status,
-        "provider": config.get_active_provider(),
+        "provider": provider,
         "model": config.get_active_model(),
         "reviews_today": today_count if db_status == "connected" else None,
         "max_reviews_per_day": config.MAX_REVIEWS_PER_DAY,
     }
+    if not has_key:
+        if provider == "gemini":
+            res["message"] = "Gemini API key is not configured. Add GEMINI_API_KEY to your .env file."
+        else:
+            res["message"] = "Anthropic API key is not configured. Add ANTHROPIC_API_KEY to your .env file."
+
+    return res
 
 
 @app.get("/api/config")

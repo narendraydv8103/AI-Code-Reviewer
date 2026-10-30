@@ -135,6 +135,13 @@ index a1b2c3d..e4f5g6h 100644
             subtext.textContent = `${providerName} is analyzing logic, security vulnerabilities, edge cases, and missing tests.`;
           }
         }
+        if (data.has_api_key === false) {
+          if (data.provider === "gemini") {
+            showError("Gemini API key is not configured. Add GEMINI_API_KEY to your .env file.");
+          } else {
+            showError("Anthropic API key is not configured. Add ANTHROPIC_API_KEY to your .env file.");
+          }
+        }
       }
     } catch {
       // Fallback silently to defaults
