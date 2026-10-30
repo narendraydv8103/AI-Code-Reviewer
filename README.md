@@ -1,5 +1,11 @@
 # AI Code Reviewer
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Embarko_Cloud-blue?style=for-the-badge&logo=fastapi)](https://ai-code-reviewer.embarko.app)
+[![GitHub License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
+
+> 🚀 **Live Application:** [https://ai-code-reviewer.embarko.app](https://ai-code-reviewer.embarko.app)  
+> 📊 **Live Telemetry & Dashboard:** [https://ai-code-reviewer.embarko.app/dashboard](https://ai-code-reviewer.embarko.app/dashboard)
+
 **AI Code Reviewer** is an automated code review engine designed to act like a senior staff engineer on your team. It analyzes raw source code snippets, unified `git diff`s, and GitHub Pull Requests in real time, delivering structured, prioritized, and actionable feedback covering security vulnerabilities, logic bugs, performance traps, code style, and missing test coverage. Powered by **FastAPI**, **Anthropic Claude 3.5 Sonnet**, and safe local static analysis (**Bandit** and **Semgrep**), it combines high-precision LLM reasoning with strict automated guardrails.
 
 ---
