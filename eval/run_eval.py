@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 import time
 from pathlib import Path
@@ -286,6 +285,7 @@ def match_issues(
 def run_evaluation(
     cases: List[Dict[str, Any]],
     engine: Any,
+    min_interval_seconds: float = 0.0,
 ) -> Dict[str, Any]:
     """Runs the evaluation harness across all benchmark cases."""
     results: List[Dict[str, Any]] = []
@@ -296,7 +296,7 @@ def run_evaluation(
     clean_cases_with_fp = 0
     total_duration_ms = 0
 
-    for case in cases:
+    for idx, case in enumerate(cases):
         cid = case.get("id", "unknown")
         code = case.get("input", "")
         language = case.get("language", "plaintext")
@@ -341,6 +341,9 @@ def run_evaluation(
             "status": status,
         })
 
+        if min_interval_seconds > 0 and idx < len(cases) - 1:
+            time.sleep(min_interval_seconds)
+
     # Summary metrics
     precision = (total_tp / (total_tp + total_fp)) if (total_tp + total_fp) > 0 else 1.0
     recall = (total_tp / (total_tp + total_fn)) if (total_tp + total_fn) > 0 else 1.0
@@ -348,8 +351,13 @@ def run_evaluation(
     fp_rate_clean = (clean_cases_with_fp / clean_cases_count) if clean_cases_count > 0 else 0.0
     avg_latency = (total_duration_ms / len(cases)) if cases else 0.0
 
+    provider_name = getattr(engine, "provider_name", "mock" if isinstance(engine, MockReviewEngine) else config.get_active_provider())
+    model_name = getattr(engine, "model", "mock" if isinstance(engine, MockReviewEngine) else config.get_active_model())
+
     return {
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "provider": provider_name,
+        "model": model_name,
         "total_cases": len(cases),
         "clean_cases": clean_cases_count,
         "clean_cases_with_fp": clean_cases_with_fp,
@@ -370,6 +378,8 @@ def format_markdown_table(eval_summary: Dict[str, Any]) -> str:
     lines: List[str] = []
     lines.append("# AI Code Reviewer - Quality Evaluation Report\n")
     lines.append(f"**Run Timestamp:** `{eval_summary['timestamp']}`  ")
+    lines.append(f"**Provider:** `{eval_summary.get('provider', 'unknown')}`  ")
+    lines.append(f"**Model:** `{eval_summary.get('model', 'unknown')}`  ")
     lines.append(f"**Total Benchmark Cases:** `{eval_summary['total_cases']}`\n")
 
     lines.append("| Case ID | Mode | Language | Expected | Returned | TP | FP | FN | Latency | Status |")
@@ -425,19 +435,26 @@ def main() -> int:
     if args.mock:
         engine = MockReviewEngine()
     else:
-        api_key = config.ANTHROPIC_API_KEY or os.environ.get("ANTHROPIC_API_KEY", "")
+        provider = config.get_active_provider()
+        api_key = config.get_active_api_key()
+        key_name = "GEMINI_API_KEY" if provider == "gemini" else "ANTHROPIC_API_KEY"
         if not api_key or not api_key.strip():
             print(
-                "\n[ERROR] Missing ANTHROPIC_API_KEY.\n"
-                "Real evaluation runs require an Anthropic API key in your .env or environment.\n"
-                "To run the offline evaluation harness with no API key, execute with --mock:\n\n"
-                "    python eval/run_eval.py --mock\n",
+                f"\n[ERROR] Missing {key_name}.\n"
+                f"Real evaluation runs require a valid {key_name} in your .env or environment.\n"
+                f"Active provider is set to: {provider}\n"
+                f"To run the offline evaluation harness with no API key, execute with --mock:\n\n"
+                f"    python eval/run_eval.py --mock\n",
                 file=sys.stderr
             )
             return 1
-        engine = ReviewEngine(api_key=api_key.strip())
+        engine = ReviewEngine(provider=provider, api_key=api_key.strip())
 
-    summary = run_evaluation(cases, engine)
+    summary = run_evaluation(
+        cases=cases,
+        engine=engine,
+        min_interval_seconds=config.LLM_MIN_INTERVAL_SECONDS if not args.mock else 0.0,
+    )
 
     # Print Markdown table to stdout
     print(format_markdown_table(summary))

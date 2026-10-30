@@ -291,6 +291,9 @@ def review_pull_request(
                     llm_calls_made += 1
                     file_results.append((filename, result))
 
+                    if config.LLM_MIN_INTERVAL_SECONDS > 0:
+                        time.sleep(config.LLM_MIN_INTERVAL_SECONDS)
+
                     # Filter issues by repo configuration (category, confidence, severity)
                     for issue in result.issues:
                         # Category filter

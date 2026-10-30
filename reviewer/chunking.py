@@ -3,8 +3,10 @@ from __future__ import annotations
 
 import logging
 import re
+import time
 from typing import List, Optional, Tuple
 
+from app import config
 from reviewer.engine import ReviewEngine
 from reviewer.models import ReviewIssue, ReviewResult
 
@@ -200,6 +202,9 @@ def review_large_diff(
             all_issues.extend(chunk_result.issues)
             if chunk_result.summary and chunk_result.summary not in summaries:
                 summaries.append(chunk_result.summary)
+
+            if idx < len(chunks) and config.LLM_MIN_INTERVAL_SECONDS > 0:
+                time.sleep(config.LLM_MIN_INTERVAL_SECONDS)
         except Exception as chunk_err:
             logger.warning("Error reviewing chunk %d/%d: %s", idx, len(chunks), chunk_err)
 

@@ -34,7 +34,7 @@ STATIC_DIR = BASE_DIR / "static"
 
 app = FastAPI(
     title="AI Code Reviewer",
-    description="Automated code and pull request review engine powered by Anthropic Claude.",
+    description="Automated code and pull request review engine.",
     version="2.0.0"
 )
 
@@ -125,6 +125,8 @@ async def health_check():
     return {
         "status": "healthy" if db_status == "connected" else "degraded",
         "database": db_status,
+        "provider": config.get_active_provider(),
+        "model": config.get_active_model(),
         "reviews_today": today_count if db_status == "connected" else None,
         "max_reviews_per_day": config.MAX_REVIEWS_PER_DAY,
     }
@@ -134,9 +136,10 @@ async def health_check():
 async def get_client_config():
     """Returns frontend runtime configurations."""
     return {
+        "provider": config.get_active_provider(),
+        "default_model": config.get_active_model(),
+        "has_api_key": config.has_active_api_key(),
         "max_code_chars": config.MAX_CODE_CHARS,
-        "default_model": config.ANTHROPIC_MODEL,
-        "has_api_key": bool(config.ANTHROPIC_API_KEY.strip()),
         "max_reviews_per_day": config.MAX_REVIEWS_PER_DAY,
         "has_access_token": bool(config.ACCESS_TOKEN.strip()),
     }

@@ -127,6 +127,14 @@ index a1b2c3d..e4f5g6h 100644
           state.maxChars = data.max_code_chars;
           updateCharCounter();
         }
+        if (data.provider) {
+          state.provider = data.provider;
+          const providerName = data.provider === "gemini" ? "Google Gemini" : "Anthropic Claude";
+          const subtext = document.getElementById("loading-subtext");
+          if (subtext) {
+            subtext.textContent = `${providerName} is analyzing logic, security vulnerabilities, edge cases, and missing tests.`;
+          }
+        }
       }
     } catch {
       // Fallback silently to defaults

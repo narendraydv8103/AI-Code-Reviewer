@@ -126,7 +126,7 @@ flowchart TD
 ### Option B: Docker Compose
 
 ```bash
-# 1. Create .env file with your Anthropic key
+# 1. Create .env file with your Anthropic key or Gemini key
 cp .env.example .env
 
 # 2. Build and launch container
@@ -138,14 +138,49 @@ docker compose logs -f
 
 ---
 
+## Using Google Gemini (Free Tier)
+
+You can run AI Code Reviewer completely free using the **Google Gemini API** free tier.
+
+### 1. Get a Free Gemini API Key
+1. Visit [Google AI Studio](https://aistudio.google.com/) and sign in with your Google account.
+2. Click **"Get API key"** and create a key in your project.
+
+### 2. Configure Your `.env` File
+Add the following two lines to your local `.env`:
+
+```env
+LLM_PROVIDER=gemini
+GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+*(Optional: configure `GEMINI_MODEL=gemini-2.5-flash` or `gemini-2.0-flash` if you wish to override the default model).*
+
+### 3. Free Tier Rate Limits & Behavior
+- **Requests Per Minute (RPM):** `15 RPM` (A default delay of `LLM_MIN_INTERVAL_SECONDS=4.0` is automatically applied for Gemini in the evaluation harness and GitHub bot to stay within limits).
+- **Daily Quota:** `1,500 requests/day` (RPD) and `1,000,000 tokens/minute` (TPM).
+- **Rate Limit Documentation:** Quotas and limits are subject to change by Google; see the [official Google AI Studio pricing and rate limits page](https://ai.google.dev/pricing).
+- **Variations:** Model reasoning and style differ between Claude 3.5 Sonnet and Gemini 2.5 Flash, though both adhere to the same validated JSON issue schema.
+
+> [!WARNING]
+> **Data Privacy Notice:** Google's Free Tier terms state that input prompts and completions may be reviewed by human reviewers and used to train and improve Google products. **Do not submit private, confidential, or proprietary source code to the free tier.** For proprietary code, use Anthropic or a paid Google Cloud Gemini tier.
+
+---
+
 ## Environment Variables Reference
 
 | Variable | Default | Description |
 |:---|:---:|:---|
-| `ANTHROPIC_API_KEY` | *None* | **Required.** Anthropic API key for Claude completions. |
+| `LLM_PROVIDER` | `anthropic` | Active AI provider (`anthropic` or `gemini`). |
+| `ANTHROPIC_API_KEY` | `""` | Anthropic API key (required if `LLM_PROVIDER=anthropic`). |
 | `ANTHROPIC_MODEL` | `claude-sonnet-5-5` | Target Claude model identifier. |
 | `ANTHROPIC_TIMEOUT_SECONDS` | `60.0` | HTTP client timeout in seconds for Anthropic API calls. |
-| `ANTHROPIC_MAX_TOKENS` | `4096` | Maximum token completion limit. |
+| `ANTHROPIC_MAX_TOKENS` | `4096` | Maximum token completion limit for Anthropic. |
+| `GEMINI_API_KEY` | `""` | Google Gemini API key (required if `LLM_PROVIDER=gemini`). |
+| `GEMINI_MODEL` | `gemini-2.5-flash` | Target Gemini model identifier (e.g. `gemini-2.5-flash`, `gemini-2.0-flash`). |
+| `GEMINI_TIMEOUT_SECONDS` | `60.0` | HTTP client timeout in seconds for Gemini REST API calls. |
+| `GEMINI_MAX_TOKENS` | `4096` | Maximum token completion limit for Gemini. |
+| `LLM_MIN_INTERVAL_SECONDS` | `4.0` *(gemini)* / `0.0` *(anthropic)* | Configurable minimum delay (seconds) between LLM calls to prevent 429 rate limits. |
 | `MAX_CODE_CHARS` | `60000` | Maximum character length allowed for web UI submissions (HTTP 413). |
 | `GITHUB_APP_ID` | `""` | GitHub App ID for pull request reviews. |
 | `GITHUB_PRIVATE_KEY_PATH` | `""` | Local path to the GitHub App `.pem` private key. |
