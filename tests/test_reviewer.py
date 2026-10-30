@@ -21,7 +21,7 @@ from reviewer.engine import (
     ReviewParsingError,
     extract_json_str,
 )
-from app import config
+from app import config, database
 from app.main import app
 from fastapi.testclient import TestClient
 from tests.base import BaseTestCase
@@ -276,6 +276,51 @@ class TestFastAPIRoutes(BaseTestCase):
         self.assertEqual(data["total_issues"], 1)
         self.assertEqual(data["issues"][0]["line"], 5)
         self.assertEqual(data["issues"][0]["severity"], "low")
+
+    def test_feedback_valid_issue_returns_200_and_is_stored(self):
+        review_id = database.record_review(
+            source="web",
+            model="test-model",
+            duration_ms=120,
+        )
+        issue_id = database.record_issue(
+            review_id=review_id,
+            severity="high",
+            category="security",
+            title="SQL Injection",
+            explanation="Unescaped user input.",
+            line_number=10,
+        )
+
+        response = self.client.post("/api/feedback", json={
+            "issue_id": issue_id,
+            "feedback": "helpful"
+        })
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["status"], "success")
+        self.assertEqual(data["issue_id"], issue_id)
+        self.assertEqual(data["feedback"], "helpful")
+
+        with database.get_connection() as conn:
+            row = conn.execute("SELECT feedback FROM issues WHERE id = ?", (issue_id,)).fetchone()
+            self.assertIsNotNone(row)
+            self.assertEqual(row["feedback"], "helpful")
+
+    def test_feedback_unknown_issue_returns_404(self):
+        response = self.client.post("/api/feedback", json={
+            "issue_id": "non-existent-issue-id",
+            "feedback": "helpful"
+        })
+        self.assertEqual(response.status_code, 404)
+        self.assertIn("not found", response.json()["detail"].lower())
+
+    def test_feedback_invalid_feedback_value_returns_422_or_400(self):
+        response = self.client.post("/api/feedback", json={
+            "issue_id": "some-issue-id",
+            "feedback": "super_helpful"
+        })
+        self.assertIn(response.status_code, (400, 422))
 
 
 if __name__ == "__main__":

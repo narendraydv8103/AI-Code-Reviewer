@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (data.helpfulness_rate !== null) {
       kpiHelpfulnessRate.textContent = `${data.helpfulness_rate}%`;
-      kpiFeedbackCounts.textContent = `${data.helpful_count} helpful &bull; ${data.not_helpful_count} unhelpful`;
+      kpiFeedbackCounts.textContent = `${data.helpful_count} helpful · ${data.not_helpful_count} not helpful`;
     } else {
       kpiHelpfulnessRate.textContent = "N/A";
       kpiFeedbackCounts.textContent = "No user feedback yet";

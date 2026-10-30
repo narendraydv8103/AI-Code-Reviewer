@@ -889,3 +889,110 @@ body {
   }
 }
 
+/* -------------------------------------------------------------
+   Issue Card Feedback Actions
+   ------------------------------------------------------------- */
+.issue-feedback {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.feedback-prompt {
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+  font-weight: 500;
+}
+
+.feedback-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-feedback {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--color-page-bg);
+  color: var(--color-ink);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 5px 12px;
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1;
+  min-height: 30px;
+}
+
+.btn-feedback:hover:not(:disabled) {
+  background-color: var(--color-accent-light);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.btn-feedback:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.btn-feedback:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.btn-feedback.active {
+  background-color: var(--color-accent-light);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.btn-feedback.btn-helpful.active {
+  background-color: #ECFDF5;
+  border-color: #10B981;
+  color: #065F46;
+}
+
+.btn-feedback.btn-not-helpful.active {
+  background-color: #FEF2F2;
+  border-color: #EF4444;
+  color: #991B1B;
+}
+
+.feedback-status {
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.feedback-status.success {
+  color: #059669;
+}
+
+.feedback-status.error {
+  color: #DC2626;
+}
+
+.feedback-status.in-flight {
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+@media (max-width: 640px) {
+  .issue-feedback {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
+
+

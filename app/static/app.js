@@ -10,7 +10,20 @@ document.addEventListener("DOMContentLoaded", () => {
     maxChars: 60000,
     allIssues: [],
     currentFilter: "all",
+    accessToken: "",
+    sessionFeedback: new Map(), // issue_id -> 'helpful' | 'not_helpful'
   };
+
+  function getAuthHeaders() {
+    const headers = {
+      "Content-Type": "application/json",
+    };
+    const token = state.accessToken || sessionStorage.getItem("access_token");
+    if (token) {
+      headers["X-API-Key"] = token;
+    }
+    return headers;
+  }
 
   // DOM Elements
   const codeInput = document.getElementById("code-input");
@@ -274,9 +287,7 @@ index a1b2c3d..e4f5g6h 100644
     try {
       const response = await fetch("/api/review", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           code: rawCode,
           language: state.language,
@@ -459,6 +470,109 @@ index a1b2c3d..e4f5g6h 100644
         <p class="issue-explanation">${escapeHtml(issue.explanation)}</p>
         ${fixBlockHtml}
       `;
+
+      if (issue.id) {
+        const feedbackDiv = document.createElement("div");
+        feedbackDiv.className = "issue-feedback";
+        feedbackDiv.dataset.issueId = issue.id;
+
+        const promptSpan = document.createElement("span");
+        promptSpan.className = "feedback-prompt";
+        promptSpan.textContent = "Was this helpful?";
+
+        const actionsDiv = document.createElement("div");
+        actionsDiv.className = "feedback-actions";
+
+        const helpfulBtn = document.createElement("button");
+        helpfulBtn.type = "button";
+        helpfulBtn.className = "btn-feedback btn-helpful";
+        helpfulBtn.setAttribute("aria-label", "Mark issue as helpful");
+        helpfulBtn.innerHTML = '<span aria-hidden="true">👍</span> <span>Helpful</span>';
+
+        const notHelpfulBtn = document.createElement("button");
+        notHelpfulBtn.type = "button";
+        notHelpfulBtn.className = "btn-feedback btn-not-helpful";
+        notHelpfulBtn.setAttribute("aria-label", "Mark issue as not helpful");
+        notHelpfulBtn.innerHTML = '<span aria-hidden="true">👎</span> <span>Not helpful</span>';
+
+        const statusSpan = document.createElement("span");
+        statusSpan.className = "feedback-status";
+        statusSpan.setAttribute("role", "status");
+        statusSpan.setAttribute("aria-live", "polite");
+
+        const existingFeedback = state.sessionFeedback.get(issue.id);
+        if (existingFeedback) {
+          helpfulBtn.disabled = true;
+          notHelpfulBtn.disabled = true;
+          if (existingFeedback === "helpful") {
+            helpfulBtn.classList.add("active");
+            helpfulBtn.setAttribute("aria-pressed", "true");
+          } else {
+            notHelpfulBtn.classList.add("active");
+            notHelpfulBtn.setAttribute("aria-pressed", "true");
+          }
+          statusSpan.textContent = "Thanks for the feedback";
+          statusSpan.className = "feedback-status success";
+        }
+
+        async function handleFeedbackClick(choice, btn) {
+          if (state.sessionFeedback.has(issue.id) || helpfulBtn.disabled) {
+            return;
+          }
+
+          helpfulBtn.disabled = true;
+          notHelpfulBtn.disabled = true;
+          statusSpan.textContent = "Submitting feedback...";
+          statusSpan.className = "feedback-status in-flight";
+
+          try {
+            const res = await fetch("/api/feedback", {
+              method: "POST",
+              headers: getAuthHeaders(),
+              body: JSON.stringify({
+                issue_id: issue.id,
+                feedback: choice,
+              }),
+            });
+
+            if (!res.ok) {
+              let errorMsg = `Submission failed (${res.status})`;
+              try {
+                const errData = await res.json();
+                if (errData.detail) errorMsg = errData.detail;
+              } catch {}
+              statusSpan.textContent = errorMsg;
+              statusSpan.className = "feedback-status error";
+              helpfulBtn.disabled = false;
+              notHelpfulBtn.disabled = false;
+              return;
+            }
+
+            state.sessionFeedback.set(issue.id, choice);
+            btn.classList.add("active");
+            btn.setAttribute("aria-pressed", "true");
+            statusSpan.textContent = "Thanks for the feedback";
+            statusSpan.className = "feedback-status success";
+          } catch (networkErr) {
+            statusSpan.textContent = `Error: ${networkErr.message || "Failed to reach server"}`;
+            statusSpan.className = "feedback-status error";
+            helpfulBtn.disabled = false;
+            notHelpfulBtn.disabled = false;
+          }
+        }
+
+        helpfulBtn.addEventListener("click", () => handleFeedbackClick("helpful", helpfulBtn));
+        notHelpfulBtn.addEventListener("click", () => handleFeedbackClick("not_helpful", notHelpfulBtn));
+
+        actionsDiv.appendChild(helpfulBtn);
+        actionsDiv.appendChild(notHelpfulBtn);
+
+        feedbackDiv.appendChild(promptSpan);
+        feedbackDiv.appendChild(actionsDiv);
+        feedbackDiv.appendChild(statusSpan);
+
+        card.appendChild(feedbackDiv);
+      }
 
       issuesList.appendChild(card);
     });
